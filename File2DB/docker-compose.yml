@@ -1,0 +1,72 @@
+# name of the application, will not consider directory name as application name
+name: File2DBApp
+
+# define all services
+services:
+  # service 1
+  datainputapp:
+    image: datainputapp_i:v0
+    container_name: datainputapp-dev
+    build:
+      context: ./datainputapp
+      dockerfile: Dockerfile
+    ports:
+      - 3400:3400
+    env_file:
+      - ./datainputapp/config/.env-dev
+    volumes:
+      - datashare_volume:/go/inputdata/
+
+  # service 2
+  webapp:
+    image: webapp_i:v0
+    container_name: webapp-dev
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+    ports:
+      - 4000:4000
+    env_file:
+      - ./webapp/config/.env-dev
+    volumes_from:
+      - datainputapp  # service name with which volume will be shared
+    networks:
+      - file2DBapp_network  # network to communicate with mssqldb
+    depends_on:
+      - mssqldb # writes data into mssqldb
+      - datainputapp # picks data created by datainputapp for processing in shared directory
+
+  # service 3
+  mssqldb:
+    image: mssqldb_i:v0
+    container_name: mssqldb-dev
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    ports:
+      - 1433:1433
+    environment:
+      - MSSQL_SA_PASSWORD=admin@123 # this will be used only for entrypoint.
+    volumes:
+      - mssqldata_volume:/var/opt/mssql
+    networks:
+      file2DBapp_network:
+        aliases:  # if not provided, will have container name as servername(dns)
+          - mssqldb # server can be accessible from other containers with this servername(dns)
+
+# define network, this should not be created outside this file.
+# else have to define attribute external:true    
+networks:
+  file2DBapp_network:
+    name: file2DBapp_network
+    driver: bridge
+
+# define volumes to persist data even if we remove the continers
+volumes:
+  # volume to save database data
+  mssqldata_volume:
+    name: mssqldata_volume
+
+  # volume to share data between datainputapp and webapp
+  datashare_volume:
+    name: datashare_volume
