@@ -109,12 +109,8 @@ Commands:
 > docker push rajatjain20/mssqldb:v0
 
 
+CI/CD pipeline:
 
+I have used GitLab for CI/CD of this application. I have created a file ".gitlab-ci.yml", which builds the images of the applications and saves them into GitLab registry.
 
-
-
-
-
-
- 
-	
+Note: Please refer "Project Overview and Screenshots.docx" for more details and screenshots.
